@@ -1,0 +1,42 @@
+﻿<Window x:Class="VieeSubtitleGenerator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VieeSubtitleGenerator"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <DockPanel LastChildFill="True">
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock Name="OBSStatus"></TextBlock>
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock Name="StatusText"></TextBlock>
+            </StatusBarItem>
+        </StatusBar>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Port"></TextBlock>
+            <TextBox Grid.Row="0" Grid.Column="1" Name="PortField" Text="4455"></TextBox>
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Password">Password</TextBlock>
+            <TextBox Grid.Row="1" Grid.Column="1" Name="PasswordField" Text="ooJFJv5kPPcpTybO"></TextBox>
+            <Button Grid.Row="2" Grid.Column="0" Click="ConnectToOBS_OnClick">Connect to OBS</Button>
+            <TextBlock Grid.Row="3" Grid.Column="0" Name="RecordStatus"></TextBlock>
+            <Button Grid.Row="3" Grid.Column="1" Click="ButtonBase_OnClick">GetStatus</Button>
+            
+        </Grid>
+    </DockPanel>
+    
+</Window>
