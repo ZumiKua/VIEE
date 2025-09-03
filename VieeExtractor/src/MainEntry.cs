@@ -2,6 +2,7 @@
 using System.Windows.Forms;
 using BizHawk.Client.EmuHawk;
 using BizHawk.Emulation.Common;
+using VieeExtractor.Server;
 
 namespace VieeExtractor;
 
@@ -21,6 +22,7 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     private ApiContainer APIs => MaybeApiContainer!;
 
     private readonly Label _label;
+    private readonly TcpServer _tcpServer;
     private IExtractor? _extractor;
 
     public MainEntry() {
@@ -30,6 +32,7 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
         Controls.Add(_label);
         ResumeLayout(performLayout: false);
         PerformLayout();
+        _tcpServer = new TcpServer(42184);
     }
 
     public override void Restart()
@@ -54,6 +57,7 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     public void OnNewText(string text)
     {
         _label.Text = text;
+        _tcpServer.SendMessage(text);
     }
 
     public void OnNewChoices(string[] choices, int index)

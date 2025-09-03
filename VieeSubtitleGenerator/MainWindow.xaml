@@ -22,6 +22,9 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200" />
@@ -30,12 +33,15 @@
 
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Port"></TextBlock>
             <TextBox Grid.Row="0" Grid.Column="1" Name="PortField" Text="4455"></TextBox>
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Password">Password</TextBlock>
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Password"/>
             <TextBox Grid.Row="1" Grid.Column="1" Name="PasswordField" Text="ooJFJv5kPPcpTybO"></TextBox>
             <Button Grid.Row="2" Grid.Column="0" Click="ConnectToOBS_OnClick">Connect to OBS</Button>
             <TextBlock Grid.Row="3" Grid.Column="0" Name="RecordStatus"></TextBlock>
             <Button Grid.Row="3" Grid.Column="1" Click="ButtonBase_OnClick">GetStatus</Button>
-            
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="Extractor Port"></TextBlock>
+            <TextBox Grid.Row="4" Grid.Column="1" Name="ExtractorPortField" Text="42184"></TextBox>
+            <Button Grid.Row="5" Grid.Column="0" Click="ConnectToExtractor_OnClick">Connect to Extractor</Button>
+            <TextBlock Grid.Row="6" Grid.Column="0" Name="Content" Text="" Grid.ColumnSpan="2" />
         </Grid>
     </DockPanel>
     

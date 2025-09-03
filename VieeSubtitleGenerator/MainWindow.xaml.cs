@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System.Net;
+using System.Net.Sockets;
+using System.Windows;
 using OBSWebsocketDotNet;
 using OBSWebsocketDotNet.Communication;
 using OBSWebsocketDotNet.Types;
@@ -10,9 +12,10 @@ namespace VieeSubtitleGenerator;
 /// <summary>
 /// Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow : Window, IExtractorListener
 {
     private readonly OBSWebsocket _obs;
+    private ExtractorClient? _tcpClient;
 
     public MainWindow()
     {
@@ -110,5 +113,43 @@ public partial class MainWindow : Window
         var ss = s % 60;
         var paused = status.IsRecordingPaused ? "Paused" : "";
         RecordStatus.Text = $"{h:00}:{m:00}:{ss:00} {status.RecordTimecode} {paused}";
+    }
+
+    private void ConnectToExtractor_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (!int.TryParse(ExtractorPortField.Text, out var port) || port <= 0 || port > 65535)
+        {
+            MessageBox.Show("Invalid Port");
+            return;
+        }
+
+        if (_tcpClient != null)
+        {
+            _tcpClient.Dispose();
+        }
+        _tcpClient = new ExtractorClient(port, this);
+        
+    }
+
+    public void OnText(string text)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            Content.Text = text;
+        });
+    }
+
+    public void OnChoices(string[] choices, int index)
+    {
+        
+    }
+
+    public void OnError(Exception exception)
+    {
+        Console.WriteLine(exception);
+        Dispatcher.Invoke(() =>
+        {
+            Content.Text = $"{exception.GetType().Namespace} {exception.Message}";
+        });
     }
 }
