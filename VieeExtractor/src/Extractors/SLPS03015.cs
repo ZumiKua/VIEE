@@ -51,11 +51,11 @@ public class SLPS03015 : IExtractor
 
     public void FrameEnd(bool fastForward)
     {
-        var gi = CheckTextChange();
-        CheckChoicesChange(gi);
+        var gi = CheckTextChange(fastForward);
+        CheckChoicesChange(fastForward, gi);
     }
 
-    private void CheckChoicesChange(GroupInfoSerialize? gi)
+    private void CheckChoicesChange(bool fastForward, GroupInfoSerialize? gi)
     {
         var choicesTextAddress = _fukyuuban ? ChoicesTextAddressFukyuuban : ChoicesTextAddress;
         var choicesEnabledAddress = _fukyuuban ? ChoicesEnabledAddressFukyuuban : ChoicesEnabledAddress;
@@ -75,7 +75,7 @@ public class SLPS03015 : IExtractor
         _lastChoicesBytes.AddRange(choicesTextMem);
         _choicesCount = choicesCount;
         _choicesEnabled = choicesEnabled;
-        if (!_choicesEnabled || _choicesCount == 0 || _lastChoicesBytes.All(b => b is 0xFF or 0x00))
+        if (!_choicesEnabled || _choicesCount == 0 || _lastChoicesBytes.All(b => b is 0xFF or 0x00) || fastForward)
         {
             _extractResultListener.OnNewChoices(Array.Empty<string>(), -1);
             return;
@@ -106,7 +106,7 @@ public class SLPS03015 : IExtractor
         _extractResultListener.OnNewChoices(_choices.ToArray(), -1);
     }
 
-    private GroupInfoSerialize? CheckTextChange()
+    private GroupInfoSerialize? CheckTextChange(bool fastForward)
     {
         var textAddress = _fukyuuban ? TextAddressFukyuuban : TextAddress;
         var textMem = _apiContainer.Memory.ReadByteRange(textAddress, 36 * 3);
@@ -117,7 +117,7 @@ public class SLPS03015 : IExtractor
 
         _lastBytes.Clear();
         _lastBytes.AddRange(textMem);
-        if (_lastBytes.All(b => b is 0xFF or 0x00))
+        if (fastForward || _lastBytes.All(b => b is 0xFF or 0x00))
         {
             _extractResultListener.OnNewText("");
             return null;
