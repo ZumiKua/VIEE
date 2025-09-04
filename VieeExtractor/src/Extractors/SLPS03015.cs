@@ -15,7 +15,15 @@ public class SLPS03015 : IExtractor
     
     private const int TextAddressFukyuuban = 0x1a4e30;
     private const int TextAddress = 0x1a53d8;
-    
+    private const int ChoicesTextAddressFukyuuban = 0x1b7ef0;
+    private const int ChoicesTextAddress = 0x1b8498;
+    private const int ChoicesCountAddressFukyuuban = 0x8b21e;
+    private const int ChoicesCountAddress = 0x8b7c6;
+    private const int ChoicesEnabledAddressFukyuuban = 0xF4171;
+    private const int ChoicesEnabledAddress = 0xf4719;
+    private const uint ChoiceEnabled = 2;
+
+        
     private readonly ApiContainer _apiContainer;
     private readonly IExtractResultListener _extractResultListener;
     private readonly bool _fukyuuban;
@@ -23,6 +31,10 @@ public class SLPS03015 : IExtractor
     private readonly StringBuilder _textBuf = new();
     private readonly CharsInfo _info;
     private readonly Dictionary<int, GroupInfoSerialize> _groupInfoDict;
+    private bool _choicesEnabled;
+    private int _choicesCount;
+    private readonly List<byte> _lastChoicesBytes = new();
+    private readonly List<string> _choices = new();
 
     public SLPS03015(string hash, ApiContainer apiContainer, IExtractResultListener extractResultListener)
     {
@@ -39,16 +51,68 @@ public class SLPS03015 : IExtractor
 
     public void FrameEnd(bool fastForward)
     {
-        CheckTextChange();
+        var gi = CheckTextChange();
+        CheckChoicesChange(gi);
     }
 
-    private void CheckTextChange()
+    private void CheckChoicesChange(GroupInfoSerialize? gi)
+    {
+        var choicesTextAddress = _fukyuuban ? ChoicesTextAddressFukyuuban : ChoicesTextAddress;
+        var choicesEnabledAddress = _fukyuuban ? ChoicesEnabledAddressFukyuuban : ChoicesEnabledAddress;
+        var choicesCountAddress = _fukyuuban ? ChoicesCountAddressFukyuuban : ChoicesCountAddress;
+        var choicesEnabled = _apiContainer.Memory.ReadByte(choicesEnabledAddress) == ChoiceEnabled;
+        var choicesCount = (int)_apiContainer.Memory.ReadByte(choicesCountAddress);
+        var choicesTextMem = choicesEnabled
+            ? _apiContainer.Memory.ReadByteRange(choicesTextAddress, choicesCount * 72)
+            : Array.Empty<byte>();
+        if (_choicesEnabled == choicesEnabled && _choicesCount == choicesCount &&
+            choicesTextMem.SequenceEqual(_lastChoicesBytes))
+        {
+            return;
+        }
+        
+        _lastChoicesBytes.Clear();
+        _lastChoicesBytes.AddRange(choicesTextMem);
+        _choicesCount = choicesCount;
+        _choicesEnabled = choicesEnabled;
+        if (!_choicesEnabled || _choicesCount == 0 || _lastChoicesBytes.All(b => b is 0xFF or 0x00))
+        {
+            _extractResultListener.OnNewChoices(Array.Empty<string>(), -1);
+            return;
+        }
+        
+        var hash = CalculateVRAMHash();
+        if (!_groupInfoDict.TryGetValue(hash, out gi))
+        {
+            Console.WriteLine("Unknown Font Page");
+            _extractResultListener.OnNewChoices(Array.Empty<string>(), -1);
+            return;
+        }
+        _choices.Clear();
+        for (int i = 0; i < choicesCount * 2; i++)
+        {
+            _textBuf.Clear();
+            ParseOneLine(_lastChoicesBytes, i * 36, gi, true);
+            if (_textBuf.Length != 0)
+            {
+                _choices.Add(_textBuf.ToString());
+            }
+
+            if (_choices.Count >= choicesCount)
+            {
+                break;
+            }
+        }
+        _extractResultListener.OnNewChoices(_choices.ToArray(), -1);
+    }
+
+    private GroupInfoSerialize? CheckTextChange()
     {
         var textAddress = _fukyuuban ? TextAddressFukyuuban : TextAddress;
         var textMem = _apiContainer.Memory.ReadByteRange(textAddress, 36 * 3);
         if (_lastBytes.SequenceEqual(textMem))
         {
-            return;
+            return null;
         }
 
         _lastBytes.Clear();
@@ -56,7 +120,7 @@ public class SLPS03015 : IExtractor
         if (_lastBytes.All(b => b is 0xFF or 0x00))
         {
             _extractResultListener.OnNewText("");
-            return;
+            return null;
         }
 
         var hash = CalculateVRAMHash();
@@ -64,51 +128,13 @@ public class SLPS03015 : IExtractor
         {
             Console.WriteLine("Unknown Font Page");
             _extractResultListener.OnNewText("");
-            return;
+            return null;
         }
 
         _textBuf.Clear();
         for (var i = 0; i < 3; i++)
         {
-            for (var j = 0; j < 36; j += 2)
-            {
-                int a = _lastBytes[i * 36 + j];
-                a += _lastBytes[i * 36 + j + 1] << 8;
-                if (a == 0xFFFF)
-                {
-                    _textBuf.Append("\u3000");
-                    continue;
-                }
-
-                if (a < gi.Chars.Length)
-                {
-                    if (_info.Chars.TryGetValue(gi.Chars[a], out var ch))
-                    {
-                        _textBuf.Append(ch);
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine($"Illegal Chars Index In Group {gi.Identifier}: {gi.Chars[a]}");
-                        _textBuf.Append("？");
-                    }
-                }
-                else
-                {
-                    Console.Error.WriteLine($"Illegal Char Index In Game Memory {gi.Identifier}: {a}");
-                    _textBuf.Append("\u3000");
-                }
-            }
-            //Removing trailing space characters
-            for (var j = _textBuf.Length - 1; j >= 0; j--)
-            {
-                if (_textBuf[j] == '\u3000')
-                {
-                    continue;
-                }
-                _textBuf.Length = j + 1;
-                break;
-            }
-
+            ParseOneLine(_lastBytes, i * 36, gi, false);
             _textBuf.Append("\n");
         }
 
@@ -128,6 +154,56 @@ public class SLPS03015 : IExtractor
         }
 
         _extractResultListener.OnNewText(_textBuf.ToString());
+        return gi;
+    }
+
+    private void ParseOneLine(IReadOnlyList<byte> bytes, int start, GroupInfoSerialize gi, bool zeroAsSpace)
+    {
+        for (var j = 0; j < 36; j += 2)
+        {
+            int a = bytes[start + j];
+            a += bytes[start + j + 1] << 8;
+            if (a == 0xFFFF || (zeroAsSpace && a == 0))
+            {
+                _textBuf.Append("\u3000");
+                continue;
+            }
+
+            string ch;
+            ch = GetChar(a, gi);
+
+            _textBuf.Append(ch);
+        }
+        //Removing trailing space characters
+        for (var j = _textBuf.Length - 1; j >= 0; j--)
+        {
+            if (_textBuf[j] == '\u3000')
+            {
+                _textBuf.Length = j;
+                continue;
+            }
+            break;
+        }
+    }
+
+    private string GetChar(int a, GroupInfoSerialize gi)
+    {
+        string ch;
+        if (a < gi.Chars.Length)
+        {
+            if (!_info.Chars.TryGetValue(gi.Chars[a], out ch))
+            {
+                Console.Error.WriteLine($"Illegal Chars Index In Group {gi.Identifier}: {gi.Chars[a]}");
+                ch = "？";
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine($"Illegal Char Index In Game Memory {gi.Identifier}: {a}");
+            ch = "\u3000";
+        }
+
+        return ch;
     }
 
     private CharsInfo LoadInfo()

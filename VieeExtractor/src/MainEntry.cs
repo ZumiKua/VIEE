@@ -24,12 +24,16 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     private readonly Label _label;
     private readonly TcpServer _tcpServer;
     private IExtractor? _extractor;
+    private readonly Label _choicesLabel;
 
     public MainEntry() {
         ClientSize = new Size(480, 320);
         SuspendLayout();
         _label = new Label { AutoSize = true, Text = "VieeExtractor" };
+        _choicesLabel = new Label { AutoSize = true, Text = "Choices" };
+        _choicesLabel.Top = 160;
         Controls.Add(_label);
+        Controls.Add(_choicesLabel);
         ResumeLayout(performLayout: false);
         PerformLayout();
         _tcpServer = new TcpServer(42184);
@@ -62,6 +66,7 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
 
     public void OnNewChoices(string[] choices, int index)
     {
-        
+        var joined = string.Join(",", choices);
+        _choicesLabel.Text = joined;
     }
 }
