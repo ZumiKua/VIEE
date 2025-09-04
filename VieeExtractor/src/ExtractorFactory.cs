@@ -11,6 +11,7 @@ public class ExtractorFactory
         switch (hash)
         {
             case "37946519":
+            case "9A49C0E4":
                 return new SLPS03015(hash, apiContainer, listener);
             default:
                 return DummyExtractor.Instance;

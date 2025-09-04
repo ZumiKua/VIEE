@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 using BizHawk.Client.EmuHawk;
 using BizHawk.Emulation.Common;
@@ -9,7 +10,7 @@ namespace VieeExtractor;
 using BizHawk.Client.Common;
 
 [ExternalTool("VieeExtractor")] // this appears in the Tools > External Tools submenu in EmuHawk
-[ExternalToolApplicability.RomList(VSystemID.Raw.PSX, "37946519")]
+[ExternalToolApplicability.RomList(VSystemID.Raw.PSX, "37946519", "9A49C0E4")]
 public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultListener
 {
     protected override string WindowTitleStatic => "VieeExtractor";
