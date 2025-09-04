@@ -24,6 +24,7 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     private readonly Label _label;
     private readonly TcpServer _tcpServer;
     private readonly Label _choicesLabel;
+    private readonly CheckBox _check;
     private readonly Label _statusLabel;
     private IExtractor? _extractor;
     private int _memoizedClientCount = -1;
@@ -32,13 +33,16 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
         ClientSize = new Size(480, 320);
         SuspendLayout();
         _label = new Label { AutoSize = true, Text = "Text:" };
+        _label.Top = 24;
         _choicesLabel = new Label { AutoSize = true, Text = "Choices:" };
         _choicesLabel.Top = 160;
         _statusLabel = new Label { AutoSize = true, Text = "" };
         _statusLabel.Top = 320 - 16;
+        _check = new CheckBox { AutoSize = true, Text = "Pause extraction in turbo mode" };
         Controls.Add(_label);
         Controls.Add(_choicesLabel);
         Controls.Add(_statusLabel);
+        Controls.Add(_check);
         ResumeLayout(performLayout: false);
         PerformLayout();
         _tcpServer = new TcpServer(42184);
@@ -77,7 +81,7 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     protected override void FastUpdateAfter()
     {
         base.FastUpdateAfter();
-        _extractor?.FrameEnd(true);
+        _extractor?.FrameEnd(_check.Checked);
         UpdateConnectedClientCount();
     }
 
