@@ -70,8 +70,6 @@ public class SLPS03015 : IExtractor
         _textBuf.Clear();
         for (var i = 0; i < 3; i++)
         {
-            var lineStartLength = _textBuf.Length;
-            var allF = true;
             for (var j = 0; j < 36; j += 2)
             {
                 int a = _lastBytes[i * 36 + j];
@@ -82,7 +80,6 @@ public class SLPS03015 : IExtractor
                     continue;
                 }
 
-                allF = false;
                 if (a < gi.Chars.Length)
                 {
                     if (_info.Chars.TryGetValue(gi.Chars[a], out var ch))
@@ -101,13 +98,33 @@ public class SLPS03015 : IExtractor
                     _textBuf.Append("\u3000");
                 }
             }
-
-            if (allF)
+            //Removing trailing space characters
+            for (var j = _textBuf.Length - 1; j >= 0; j--)
             {
-                _textBuf.Length = lineStartLength;
+                if (_textBuf[j] == '\u3000')
+                {
+                    continue;
+                }
+                _textBuf.Length = j + 1;
+                break;
             }
 
             _textBuf.Append("\n");
+        }
+
+        //Removing trailing newline characters
+        for (var i = _textBuf.Length - 1; i >= 0; i--)
+        {
+            if (_textBuf[i] == '\n')
+            {
+                if (i == 0)
+                {
+                    _textBuf.Length = 0;
+                }
+                continue;
+            }
+            _textBuf.Length = i + 1;
+            break;
         }
 
         _extractResultListener.OnNewText(_textBuf.ToString());
