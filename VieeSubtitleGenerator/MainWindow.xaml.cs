@@ -1,11 +1,8 @@
-﻿using System.Net;
-using System.Net.Sockets;
-using System.Windows;
+﻿using System.Windows;
 using OBSWebsocketDotNet;
 using OBSWebsocketDotNet.Communication;
 using OBSWebsocketDotNet.Types;
 using OBSWebsocketDotNet.Types.Events;
-using Websocket.Client;
 
 namespace VieeSubtitleGenerator;
 
@@ -15,7 +12,7 @@ namespace VieeSubtitleGenerator;
 public partial class MainWindow : Window, IExtractorListener
 {
     private readonly OBSWebsocket _obs;
-    private ExtractorClient? _tcpClient;
+    private readonly ExtractorClientManager _clientManager;
 
     public MainWindow()
     {
@@ -24,7 +21,9 @@ public partial class MainWindow : Window, IExtractorListener
         _obs.RecordStateChanged += RecordStateChanged;
         _obs.Connected += Connected;
         _obs.Disconnected += Disconnected;
-        OBSStatus.Text = "[X]OBS";
+        OBSStatus.Text = "OBS Disconnected";
+        ExtractorStatus.Text = "Extractor Disconnected";
+        _clientManager = new ExtractorClientManager(this);
     }
 
     private void ConnectToOBS_OnClick(object sender, RoutedEventArgs e)
@@ -122,13 +121,8 @@ public partial class MainWindow : Window, IExtractorListener
             MessageBox.Show("Invalid Port");
             return;
         }
-
-        if (_tcpClient != null)
-        {
-            _tcpClient.Dispose();
-        }
-        _tcpClient = new ExtractorClient(port, this);
-        
+        ExtractorStatus.Text = "Extractor Connected";
+        _clientManager.Connect(port);
     }
 
     public void OnText(string text)
@@ -149,7 +143,9 @@ public partial class MainWindow : Window, IExtractorListener
         Console.WriteLine(exception);
         Dispatcher.Invoke(() =>
         {
-            Content.Text = $"{exception.GetType().Namespace} {exception.Message}";
+            MessageBox.Show("Failed to connect to the extractor.");
+            ExtractorStatus.Text = "Extractor Disconnected";
+            StatusText.Text = $"Extractor Disconnected: {exception.GetType().Namespace} {exception.Message}";
         });
     }
 }

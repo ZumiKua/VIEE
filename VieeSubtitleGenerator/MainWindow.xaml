@@ -3,17 +3,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:VieeSubtitleGenerator"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <DockPanel LastChildFill="True">
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
-                <TextBlock Name="OBSStatus"></TextBlock>
+                <TextBlock Name="OBSStatus" />
             </StatusBarItem>
             <Separator />
             <StatusBarItem>
-                <TextBlock Name="StatusText"></TextBlock>
+                <TextBlock Name="ExtractorStatus" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock Name="StatusText" />
             </StatusBarItem>
         </StatusBar>
         <Grid>
@@ -31,15 +34,15 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="Port"></TextBlock>
-            <TextBox Grid.Row="0" Grid.Column="1" Name="PortField" Text="4455"></TextBox>
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Port" />
+            <TextBox Grid.Row="0" Grid.Column="1" Name="PortField" Text="4455" />
             <TextBlock Grid.Row="1" Grid.Column="0" Text="Password"/>
-            <TextBox Grid.Row="1" Grid.Column="1" Name="PasswordField" Text="ooJFJv5kPPcpTybO"></TextBox>
+            <TextBox Grid.Row="1" Grid.Column="1" Name="PasswordField" Text="ooJFJv5kPPcpTybO" />
             <Button Grid.Row="2" Grid.Column="0" Click="ConnectToOBS_OnClick">Connect to OBS</Button>
-            <TextBlock Grid.Row="3" Grid.Column="0" Name="RecordStatus"></TextBlock>
+            <TextBlock Grid.Row="3" Grid.Column="0" Name="RecordStatus" />
             <Button Grid.Row="3" Grid.Column="1" Click="ButtonBase_OnClick">GetStatus</Button>
-            <TextBlock Grid.Row="4" Grid.Column="0" Text="Extractor Port"></TextBlock>
-            <TextBox Grid.Row="4" Grid.Column="1" Name="ExtractorPortField" Text="42184"></TextBox>
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="Extractor Port" />
+            <TextBox Grid.Row="4" Grid.Column="1" Name="ExtractorPortField" Text="42184" />
             <Button Grid.Row="5" Grid.Column="0" Click="ConnectToExtractor_OnClick">Connect to Extractor</Button>
             <TextBlock Grid.Row="6" Grid.Column="0" Name="Content" Text="" Grid.ColumnSpan="2" />
         </Grid>

@@ -38,7 +38,10 @@ public class ExtractorClient : IDisposable
                 }
                 stream.ReadExactly(buf, 0, len);
                 var str = Encoding.UTF8.GetString(buf, 0, len);
-                _listener.OnText(str);
+                if (_started)
+                {
+                    _listener.OnText(str);
+                }
             }
             catch (Exception e)
             {
