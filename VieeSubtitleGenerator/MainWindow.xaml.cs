@@ -47,6 +47,7 @@ public partial class MainWindow : Window, IExtractorListener
 
     private void OnDisconnected(ObsDisconnectionInfo e)
     {
+        MessageBox.Show("OBS Disconnected");
         OBSStatus.Text = "OBS Disconnected";
         var reason = e.DisconnectReason;
         if (reason == null)
@@ -120,30 +121,6 @@ public partial class MainWindow : Window, IExtractorListener
         });
     }
 
-    private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (!_obs.IsConnected)
-        {
-            RecordStatus.Text = "Not Connected";
-            return;
-        }
-
-        var status = _obs.GetRecordStatus();
-        if (!status.IsRecording)
-        {
-            RecordStatus.Text = "Not Recording";
-            return;
-        }
-
-        var duration = status.RecordingDuration;
-        var s = duration / 1000L;
-        var h = s / 3600;
-        var m = s % 3600 / 60;
-        var ss = s % 60;
-        var paused = status.IsRecordingPaused ? "Paused" : "";
-        RecordStatus.Text = $"{h:00}:{m:00}:{ss:00} {status.RecordTimecode} {paused}";
-    }
-
     private void ConnectToExtractor_OnClick(object sender, RoutedEventArgs e)
     {
         if (!int.TryParse(ExtractorPortField.Text, out var port) || port <= 0 || port > 65535)
@@ -152,6 +129,7 @@ public partial class MainWindow : Window, IExtractorListener
             return;
         }
         ExtractorStatus.Text = "Extractor Connected";
+        StatusText.Text = "Extractor Connected";
         _clientManager.Connect(port);
     }
 
