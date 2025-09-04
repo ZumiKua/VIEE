@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -10,10 +12,10 @@ namespace VieeExtractor.Server;
 
 public class TcpServer : IDisposable
 {
-    private readonly ConcurrentBag<TcpClient> _incomingSockets = new();
+    private readonly ConcurrentDictionary<TcpClient, int> _incomingSockets = new();
     private readonly TcpListener _socket;
     private readonly object _startedLock = new();
-    private volatile bool _started;
+    private bool _started;
 
     public TcpServer(int port)
     {
@@ -33,12 +35,26 @@ public class TcpServer : IDisposable
     {
         var data = Encoding.UTF8.GetBytes(msg);
         var len = BitConverter.GetBytes(data.Length);
-        foreach (var socket in _incomingSockets)
+        var remove = new List<TcpClient>(); 
+        foreach (var socket in _incomingSockets.Keys)
         {
             var stream = socket.GetStream();
-            stream.Write(len, 0, len.Length);
-            stream.Write(data, 0, data.Length);
+            try
+            {
+                stream.Write(len, 0, len.Length);
+                stream.Write(data, 0, data.Length);
+            }
+            catch (IOException e)
+            {
+                Console.Error.WriteLine(e); 
+                remove.Add(socket);
+            }
         }
+        foreach (var tcpClient in remove)
+        {
+            _incomingSockets.TryRemove(tcpClient, out _);
+        }
+        
     }
 
     private void OnSocketAccepted(Task<TcpClient> s)
@@ -53,7 +69,7 @@ public class TcpServer : IDisposable
         {
             if (_started)
             {
-                _incomingSockets.Add(socket);
+                _incomingSockets.TryAdd(socket, 0);
             }
             else
             {
@@ -75,7 +91,7 @@ public class TcpServer : IDisposable
             _started = false;
         }
         _socket.Stop();
-        foreach (var socket in _incomingSockets)
+        foreach (var socket in _incomingSockets.Keys)
         {
             socket.Dispose();
         }
