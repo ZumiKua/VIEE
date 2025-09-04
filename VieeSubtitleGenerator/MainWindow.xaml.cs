@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.IO;
+using System.Windows;
 using OBSWebsocketDotNet;
 using OBSWebsocketDotNet.Communication;
 using OBSWebsocketDotNet.Types;
@@ -13,6 +14,8 @@ public partial class MainWindow : Window, IExtractorListener
 {
     private readonly OBSWebsocket _obs;
     private readonly ExtractorClientManager _clientManager;
+    private readonly SrtWriter _srtWriter = new();
+    private readonly Timer _timer = new();
 
     public MainWindow()
     {
@@ -74,20 +77,47 @@ public partial class MainWindow : Window, IExtractorListener
     {
         Dispatcher.Invoke(() =>
         {
-            UpdateRecordingStatus();
+            var status = UpdateRecordingStatus();
+            _timer.OnConnected(status);
             StatusText.Text = $"Connected to OBS";
         });
     }
 
-    private void UpdateRecordingStatus(OutputState? outputStateState = null)
+    private RecordingStatus UpdateRecordingStatus(OutputState? outputStateState = null)
     {
         var s = _obs.GetRecordStatus();
         OBSStatus.Text = GetRecordingStatusString(s, outputStateState);
+        return s;
     }
 
     private void RecordStateChanged(object? sender, RecordStateChangedEventArgs e)
     {
-        Dispatcher.Invoke(() => UpdateRecordingStatus(e.OutputState.State));
+        _timer.OnRecordStateChanged(e.OutputState.State);
+        string? msg = null;
+        if (e.OutputState.State == OutputState.OBS_WEBSOCKET_OUTPUT_STOPPED && e.OutputState.OutputPath != null)
+        {
+            SrtWriter.Writer writer;
+            lock (_srtWriter)
+            {
+                writer = _srtWriter.GetWriterAndClear();
+            }
+            if (writer.HasContent())
+            {
+                var duration = _timer.GetCurrentTime();
+                var path = Path.ChangeExtension(e.OutputState.OutputPath, ".srt");
+                using var stream = File.Open(path, FileMode.Create);
+                writer.WriteTo(stream, duration, false);
+                msg = $"Srt File written to {path}";
+            }
+        }
+        Dispatcher.Invoke(() =>
+        {
+            if (msg != null)
+            {
+                StatusText.Text = msg;
+            }
+            UpdateRecordingStatus(e.OutputState.State);
+        });
     }
 
     private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
@@ -127,6 +157,18 @@ public partial class MainWindow : Window, IExtractorListener
 
     public void OnText(string text)
     {
+        if (_obs.IsConnected)
+        {
+            var status = _obs.GetRecordStatus();
+            if (status.IsRecording && !status.IsRecordingPaused)
+            {
+                var duration = _timer.GetCurrentTime();
+                lock (_srtWriter)
+                {
+                    _srtWriter.AddEntry(text, duration);
+                }
+            }
+        }
         Dispatcher.Invoke(() =>
         {
             Content.Text = text;
