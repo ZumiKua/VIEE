@@ -190,4 +190,9 @@ public partial class MainWindow : Window, IExtractorListener
             StatusText.Text = $"Extractor Disconnected: {exception.GetType().Namespace} {exception.Message}";
         });
     }
+
+    private void MainWindow_OnClosed(object? sender, EventArgs e)
+    {
+        _clientManager.Dispose();
+    }
 }
