@@ -27,6 +27,8 @@ public class TcpServer : IDisposable
         _socket.AcceptTcpClientAsync().ContinueWith(OnSocketAccepted);
     }
 
+    public int ClientCount => _incomingSockets.Count;
+
     public void SendMessage(string msg)
     {
         _executor.Submit(() => SendToAll(msg));

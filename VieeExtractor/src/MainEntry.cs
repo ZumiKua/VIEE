@@ -23,8 +23,10 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
 
     private readonly Label _label;
     private readonly TcpServer _tcpServer;
-    private IExtractor? _extractor;
     private readonly Label _choicesLabel;
+    private readonly Label _statusLabel;
+    private IExtractor? _extractor;
+    private int _memoizedClientCount = -1;
 
     public MainEntry() {
         ClientSize = new Size(480, 320);
@@ -32,8 +34,11 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
         _label = new Label { AutoSize = true, Text = "Text:" };
         _choicesLabel = new Label { AutoSize = true, Text = "Choices:" };
         _choicesLabel.Top = 160;
+        _statusLabel = new Label { AutoSize = true, Text = "" };
+        _statusLabel.Top = 320 - 16;
         Controls.Add(_label);
         Controls.Add(_choicesLabel);
+        Controls.Add(_statusLabel);
         ResumeLayout(performLayout: false);
         PerformLayout();
         _tcpServer = new TcpServer(42184);
@@ -56,12 +61,24 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     {
         base.UpdateAfter();
         _extractor?.FrameEnd(false);
+        UpdateConnectedClientCount();
+    }
+
+    private void UpdateConnectedClientCount()
+    {
+        var count = _tcpServer.ClientCount;
+        if (_memoizedClientCount != count)
+        {
+            _memoizedClientCount = count;
+            _statusLabel.Text = $"Connected Client: {count}";
+        }
     }
 
     protected override void FastUpdateAfter()
     {
         base.FastUpdateAfter();
         _extractor?.FrameEnd(true);
+        UpdateConnectedClientCount();
     }
 
     public void OnNewText(string text)
