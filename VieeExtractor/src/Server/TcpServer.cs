@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -44,7 +45,7 @@ public class TcpServer : IDisposable
                 stream.Write(len, 0, len.Length);
                 stream.Write(data, 0, data.Length);
             }
-            catch (IOException e)
+            catch (Exception e) when (e is IOException or ObjectDisposedException)
             {
                 Console.Error.WriteLine(e); 
                 remove.Add(socket);
@@ -52,14 +53,17 @@ public class TcpServer : IDisposable
         }
         foreach (var tcpClient in remove)
         {
-            _incomingSockets.TryRemove(tcpClient, out _);
+            if (_incomingSockets.TryRemove(tcpClient, out _))
+            {
+                tcpClient.Dispose();
+            }
         }
         
     }
 
     private void OnSocketAccepted(Task<TcpClient> s)
     {
-        if (!s.IsCompleted)
+        if (s.IsFaulted || s.IsCanceled)
         {
             return;
         }
@@ -80,20 +84,30 @@ public class TcpServer : IDisposable
         {
             socket.Dispose();
         }
-        
-        _socket.AcceptTcpClientAsync().ContinueWith(OnSocketAccepted);
+        else
+        {
+            _socket.AcceptTcpClientAsync().ContinueWith(OnSocketAccepted);
+        }
     }
 
     public void Dispose()
     {
         lock (_startedLock)
         {
+            if (!_started)
+            {
+                return;
+            }
             _started = false;
         }
         _socket.Stop();
-        foreach (var socket in _incomingSockets.Keys)
+        var arr = _incomingSockets.Keys.ToArray();
+        foreach (var tcpClient in arr)
         {
-            socket.Dispose();
+            if (_incomingSockets.TryRemove(tcpClient, out _))
+            {
+                tcpClient.Dispose();
+            }
         }
     }
 }
