@@ -18,9 +18,13 @@ public partial class MainWindow : Window, IExtractorListener
     private readonly SrtWriter _choicesWriter = new();
     private readonly Timer _timer = new();
 
+    public bool KeepTypeWriterEffect { get => _keepTypeWriterEffect; set => _keepTypeWriterEffect = value; }
+    private volatile bool _keepTypeWriterEffect;
+
     public MainWindow()
     {
         InitializeComponent();
+        DataContext = this;
         _obs = new OBSWebsocket();
         _obs.RecordStateChanged += RecordStateChanged;
         _obs.Connected += Connected;
@@ -99,13 +103,13 @@ public partial class MainWindow : Window, IExtractorListener
         if (e.OutputState.State == OutputState.OBS_WEBSOCKET_OUTPUT_STOPPED && e.OutputState.OutputPath != null)
         {
             var path = Path.ChangeExtension(e.OutputState.OutputPath, ".srt");
-            if (WriteSrtWriterContent(_srtWriter, path))
+            if (WriteSrtWriterContent(_srtWriter, path, _keepTypeWriterEffect))
             {
                 msg = $"Srt File written to {path}";
             }
 
             var choicesPath = Path.ChangeExtension(e.OutputState.OutputPath, ".choices.srt");
-            WriteSrtWriterContent(_choicesWriter, choicesPath);
+            WriteSrtWriterContent(_choicesWriter, choicesPath, false);
         }
         Dispatcher.Invoke(() =>
         {
@@ -117,7 +121,7 @@ public partial class MainWindow : Window, IExtractorListener
         });
     }
 
-    private bool WriteSrtWriterContent(SrtWriter srtWriter, string path)
+    private bool WriteSrtWriterContent(SrtWriter srtWriter, string path, bool keepTypeWriterEffect)
     {
         SrtWriter.Writer writer;
         lock (srtWriter)
@@ -132,7 +136,7 @@ public partial class MainWindow : Window, IExtractorListener
         var duration = _timer.GetCurrentTime();
 
         using var stream = File.Open(path, FileMode.Create);
-        writer.WriteTo(stream, duration, false);
+        writer.WriteTo(stream, duration, keepTypeWriterEffect);
         return true;
     }
 

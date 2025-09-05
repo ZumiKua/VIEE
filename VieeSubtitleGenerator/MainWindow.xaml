@@ -6,6 +6,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800"
         Closed="MainWindow_OnClosed"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}"
 >
     <DockPanel LastChildFill="True">
         <StatusBar DockPanel.Dock="Bottom">
@@ -30,6 +31,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -45,8 +47,12 @@
             <TextBlock Grid.Row="3" Grid.Column="0" Text="Extractor Port" />
             <TextBox Grid.Row="3" Grid.Column="1" Name="ExtractorPortField" Text="42184" />
             <Button Grid.Row="4" Grid.Column="0" Click="ConnectToExtractor_OnClick">Connect to Extractor</Button>
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="Last Received Text:" Grid.ColumnSpan="3" />
-            <TextBlock Grid.Row="6" Grid.Column="0" Name="Content" Text="" Grid.ColumnSpan="3" />
+            <CheckBox Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3"
+                      IsChecked="{Binding KeepTypeWriterEffect, Mode=TwoWay }">
+                Keep TypeWriter Effect
+            </CheckBox>
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="Last Received Text:" Grid.ColumnSpan="3" />
+            <TextBlock Grid.Row="7" Grid.Column="0" Name="Content" Text="" Grid.ColumnSpan="3" />
         </Grid>
     </DockPanel>
     
