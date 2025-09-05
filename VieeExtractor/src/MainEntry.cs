@@ -1,13 +1,11 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
+using BizHawk.Client.Common;
 using BizHawk.Client.EmuHawk;
 using BizHawk.Emulation.Common;
 using VieeExtractor.Server;
 
 namespace VieeExtractor;
-
-using BizHawk.Client.Common;
 
 [ExternalTool("VieeExtractor")] // this appears in the Tools > External Tools submenu in EmuHawk
 [ExternalToolApplicability.RomList(VSystemID.Raw.PSX, "37946519", "9A49C0E4")]
@@ -38,6 +36,12 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
         ResumeLayout(performLayout: false);
         PerformLayout();
         _tcpServer = new TcpServer(42184);
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        base.OnFormClosed(e);
+        _tcpServer.Dispose();
     }
 
     public override void Restart()
