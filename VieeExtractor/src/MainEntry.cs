@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Text.Json;
 using System.Windows.Forms;
 using BizHawk.Client.Common;
 using BizHawk.Client.EmuHawk;
@@ -66,12 +67,16 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     public void OnNewText(string text)
     {
         _label.Text = text;
-        _tcpServer.SendMessage(text);
+        var d = ExtractorData.CreateText(text);
+        _tcpServer.SendMessage(JsonSerializer.Serialize(d));
     }
 
     public void OnNewChoices(string[] choices, int index)
     {
         var joined = string.Join(",", choices);
         _choicesLabel.Text = joined;
+        var d = ExtractorData.CreateChoices(choices, index);
+        _tcpServer.SendMessage(JsonSerializer.Serialize(d));
+
     }
 }

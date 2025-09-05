@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
+using System.Text.Json;
 
 namespace VieeSubtitleGenerator;
 
@@ -37,10 +37,18 @@ public class ExtractorClient : IDisposable
                     buf = new byte[len];
                 }
                 stream.ReadExactly(buf, 0, len);
-                var str = Encoding.UTF8.GetString(buf, 0, len);
+                var data = JsonSerializer.Deserialize<ExtractorData>(new ReadOnlySpan<byte>(buf)[..len]);
                 if (_started)
                 {
-                    _listener.OnText(str);
+                    switch (data.Type)
+                    {
+                        case ExtractorData.TypeText:
+                            _listener.OnText(data.Text);
+                            break;
+                        case ExtractorData.TypeChoices:
+                            _listener.OnChoices(data.Choices, data.Index);
+                            break;
+                    }
                 }
             }
             catch (Exception e)

@@ -15,6 +15,7 @@ public partial class MainWindow : Window, IExtractorListener
     private readonly OBSWebsocket _obs;
     private readonly ExtractorClientManager _clientManager;
     private readonly SrtWriter _srtWriter = new();
+    private readonly SrtWriter _choicesWriter = new();
     private readonly Timer _timer = new();
 
     public MainWindow()
@@ -97,19 +98,14 @@ public partial class MainWindow : Window, IExtractorListener
         string? msg = null;
         if (e.OutputState.State == OutputState.OBS_WEBSOCKET_OUTPUT_STOPPED && e.OutputState.OutputPath != null)
         {
-            SrtWriter.Writer writer;
-            lock (_srtWriter)
+            var path = Path.ChangeExtension(e.OutputState.OutputPath, ".srt");
+            if (WriteSrtWriterContent(_srtWriter, path))
             {
-                writer = _srtWriter.GetWriterAndClear();
-            }
-            if (writer.HasContent())
-            {
-                var duration = _timer.GetCurrentTime();
-                var path = Path.ChangeExtension(e.OutputState.OutputPath, ".srt");
-                using var stream = File.Open(path, FileMode.Create);
-                writer.WriteTo(stream, duration, false);
                 msg = $"Srt File written to {path}";
             }
+
+            var choicesPath = Path.ChangeExtension(e.OutputState.OutputPath, ".choices.srt");
+            WriteSrtWriterContent(_choicesWriter, choicesPath);
         }
         Dispatcher.Invoke(() =>
         {
@@ -119,6 +115,25 @@ public partial class MainWindow : Window, IExtractorListener
             }
             UpdateRecordingStatus(e.OutputState.State);
         });
+    }
+
+    private bool WriteSrtWriterContent(SrtWriter srtWriter, string path)
+    {
+        SrtWriter.Writer writer;
+        lock (srtWriter)
+        {
+            writer = srtWriter.GetWriterAndClear();
+        }
+
+        if (!writer.HasContent())
+        {
+            return false;
+        }
+        var duration = _timer.GetCurrentTime();
+
+        using var stream = File.Open(path, FileMode.Create);
+        writer.WriteTo(stream, duration, false);
+        return true;
     }
 
     private void ConnectToExtractor_OnClick(object sender, RoutedEventArgs e)
@@ -155,7 +170,18 @@ public partial class MainWindow : Window, IExtractorListener
 
     public void OnChoices(string[] choices, int index)
     {
-        
+        if (_obs.IsConnected)
+        {
+            var status = _obs.GetRecordStatus();
+            if (status.IsRecording && !status.IsRecordingPaused)
+            {
+                var duration = _timer.GetCurrentTime();
+                lock (_choicesWriter)
+                {
+                    _choicesWriter.AddEntry(string.Join("\n", choices), duration);
+                }
+            }
+        }
     }
 
     public void OnError(Exception exception)

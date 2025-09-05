@@ -6,7 +6,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace VieeExtractor.Server;
@@ -16,6 +15,7 @@ public class TcpServer : IDisposable
     private readonly ConcurrentDictionary<TcpClient, int> _incomingSockets = new();
     private readonly TcpListener _socket;
     private readonly object _startedLock = new();
+    private readonly SingleThreadExecutor _executor = new();
     private bool _started;
 
     public TcpServer(int port)
@@ -29,7 +29,7 @@ public class TcpServer : IDisposable
 
     public void SendMessage(string msg)
     {
-        ThreadPool.QueueUserWorkItem(_ => SendToAll(msg));
+        _executor.Submit(() => SendToAll(msg));
     }
 
     private void SendToAll(string msg)
@@ -100,6 +100,7 @@ public class TcpServer : IDisposable
             }
             _started = false;
         }
+        _executor.Dispose();
         _socket.Stop();
         var arr = _incomingSockets.Keys.ToArray();
         foreach (var tcpClient in arr)
