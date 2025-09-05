@@ -29,8 +29,8 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     public MainEntry() {
         ClientSize = new Size(480, 320);
         SuspendLayout();
-        _label = new Label { AutoSize = true, Text = "VieeExtractor" };
-        _choicesLabel = new Label { AutoSize = true, Text = "Choices" };
+        _label = new Label { AutoSize = true, Text = "Text:" };
+        _choicesLabel = new Label { AutoSize = true, Text = "Choices:" };
         _choicesLabel.Top = 160;
         Controls.Add(_label);
         Controls.Add(_choicesLabel);
@@ -66,15 +66,14 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
 
     public void OnNewText(string text)
     {
-        _label.Text = text;
+        _label.Text = "Text:\n" + text;
         var d = ExtractorData.CreateText(text);
         _tcpServer.SendMessage(JsonSerializer.Serialize(d));
     }
 
     public void OnNewChoices(string[] choices, int index)
     {
-        var joined = string.Join(",", choices);
-        _choicesLabel.Text = joined;
+        _choicesLabel.Text = "Choices:\n" + string.Join(",", choices);
         var d = ExtractorData.CreateChoices(choices, index);
         _tcpServer.SendMessage(JsonSerializer.Serialize(d));
 
