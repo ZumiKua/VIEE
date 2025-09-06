@@ -1,6 +1,9 @@
 bin/
 obj/
-/BizHawk/
+/BizHawk/*
+!/BizHawk/ExternalTools
+/BizHawk/ExternalTools/*
+!/BizHawk/ExternalTools/SLPS03015.zip
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
