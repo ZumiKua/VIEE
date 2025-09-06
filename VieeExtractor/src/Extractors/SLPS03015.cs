@@ -15,6 +15,8 @@ public class SLPS03015 : IExtractor
     
     private const int TextAddressFukyuuban = 0x1a4e30;
     private const int TextAddress = 0x1a53d8;
+    private const int LinePerChoiceAddressFukyuuban = 0x8b1df;
+    private const int LinePerChoiceAddress = 0x8b787;
     private const int ChoicesTextAddressFukyuuban = 0x1b7ef0;
     private const int ChoicesTextAddress = 0x1b8498;
     private const int ChoicesCountAddressFukyuuban = 0x8b21e;
@@ -22,6 +24,8 @@ public class SLPS03015 : IExtractor
     private const int ChoicesEnabledAddressFukyuuban = 0xF4171;
     private const int ChoicesEnabledAddress = 0xf4719;
     private const uint ChoiceEnabled = 2;
+    private const byte SingleLineChoice = 0x0A;
+    private const byte DualLineChoice = 0x14;
 
         
     private readonly ApiContainer _apiContainer;
@@ -33,6 +37,7 @@ public class SLPS03015 : IExtractor
     private readonly Dictionary<int, GroupInfoSerialize> _groupInfoDict;
     private bool _choicesEnabled;
     private int _choicesCount;
+    private bool _dualLineChoices;
     private readonly List<byte> _lastChoicesBytes = new();
     private readonly List<string> _choices = new();
 
@@ -60,8 +65,14 @@ public class SLPS03015 : IExtractor
         var choicesTextAddress = _fukyuuban ? ChoicesTextAddressFukyuuban : ChoicesTextAddress;
         var choicesEnabledAddress = _fukyuuban ? ChoicesEnabledAddressFukyuuban : ChoicesEnabledAddress;
         var choicesCountAddress = _fukyuuban ? ChoicesCountAddressFukyuuban : ChoicesCountAddress;
+        var linePerChoiceAddress = _fukyuuban ? LinePerChoiceAddressFukyuuban : LinePerChoiceAddress;
         var choicesEnabled = _apiContainer.Memory.ReadByte(choicesEnabledAddress) == ChoiceEnabled;
         var choicesCount = (int)_apiContainer.Memory.ReadByte(choicesCountAddress);
+        var linePerChoiceFlag = _apiContainer.Memory.ReadByte(linePerChoiceAddress);
+        if (linePerChoiceFlag is SingleLineChoice or DualLineChoice)
+        {
+            _dualLineChoices = linePerChoiceFlag == DualLineChoice;
+        }
         var choicesTextMem = choicesEnabled
             ? _apiContainer.Memory.ReadByteRange(choicesTextAddress, choicesCount * 72)
             : Array.Empty<byte>();
@@ -89,18 +100,18 @@ public class SLPS03015 : IExtractor
             return;
         }
         _choices.Clear();
-        for (int i = 0; i < choicesCount * 2; i++)
+        var linePerChoice = _dualLineChoices ? 2 : 1;
+        for (var i = 0; i < choicesCount; i++)
         {
             _textBuf.Clear();
-            ParseOneLine(_lastChoicesBytes, i * 36, gi, true);
+            for (var j = 0; j < linePerChoice; j++)
+            {
+                var lineIndex = i * linePerChoice + j;
+                ParseOneLine(_lastChoicesBytes, lineIndex * 36, 8, gi, false);
+            }
             if (_textBuf.Length != 0)
             {
                 _choices.Add(_textBuf.ToString());
-            }
-
-            if (_choices.Count >= choicesCount)
-            {
-                break;
             }
         }
         _extractResultListener.OnNewChoices(_choices.ToArray(), -1);
@@ -134,7 +145,7 @@ public class SLPS03015 : IExtractor
         _textBuf.Clear();
         for (var i = 0; i < 3; i++)
         {
-            ParseOneLine(_lastBytes, i * 36, gi, false);
+            ParseOneLine(_lastBytes, i * 36, 18, gi, false);
             _textBuf.Append("\n");
         }
 
@@ -157,9 +168,9 @@ public class SLPS03015 : IExtractor
         return gi;
     }
 
-    private void ParseOneLine(IReadOnlyList<byte> bytes, int start, GroupInfoSerialize gi, bool zeroAsSpace)
+    private void ParseOneLine(IReadOnlyList<byte> bytes, int start, int length, GroupInfoSerialize gi, bool zeroAsSpace)
     {
-        for (var j = 0; j < 36; j += 2)
+        for (var j = 0; j < length * 2; j += 2)
         {
             int a = bytes[start + j];
             a += bytes[start + j + 1] << 8;
