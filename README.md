@@ -9,6 +9,10 @@ VIEE是一款和[BizHawk](https://github.com/TASEmulators/BizHawk)配合使用�
 * Tantei Jinguji Saburo - Tomoshibi ga Kienu Ma ni (Japan) (Fukyuuban)
 * Tantei Jinguji Saburo - Tomoshibi ga Kienu Ma ni (Japan)
 
+## 目前的已知问题
+
+* Tantei Jinguji Saburo - Tomoshibi ga Kienu Ma ni (Japan) （包括Fukyuuban）在向洋子下达指令时会错误的识别到选项，选项中会包含不相关的内容。该问题应该不会修复。
+
 ## 组件
 
 ### VieeExtractor
