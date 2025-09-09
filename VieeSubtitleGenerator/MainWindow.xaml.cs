@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Reflection;
 using System.Windows;
 using OBSWebsocketDotNet;
 using OBSWebsocketDotNet.Communication;
@@ -35,6 +36,8 @@ public partial class MainWindow : Window, IExtractorListener
         OBSStatus.Text = "OBS Disconnected";
         ExtractorStatus.Text = "Extractor Disconnected";
         _clientManager = new ExtractorClientManager(this);
+        Version.Text = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        
     }
 
     private void ConnectToOBS_OnClick(object sender, RoutedEventArgs e)
