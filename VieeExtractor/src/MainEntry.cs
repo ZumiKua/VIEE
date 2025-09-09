@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Windows.Forms;
 using BizHawk.Client.Common;
@@ -37,13 +38,24 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
         _label.Top = 24;
         _choicesLabel = new Label { AutoSize = true, Text = "Choices:" };
         _choicesLabel.Top = 160;
-        _statusLabel = new Label { AutoSize = true, Text = "" };
-        _statusLabel.Top = 320 - 16;
+        _statusLabel = new Label
+        {
+            AutoSize = true, Text = "", Top = 320 - 16, Anchor = AnchorStyles.Bottom | AnchorStyles.Left
+        };
+        var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            .InformationalVersion;
+        var versionLabel = new Label
+        {
+            TextAlign = ContentAlignment.TopRight,
+            Width = 200, Left = 480 - 200, Text = version, Top = 320 - 16,
+            Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+        };
         _check = new CheckBox { AutoSize = true, Text = "Pause extraction in turbo mode" };
         Controls.Add(_label);
         Controls.Add(_choicesLabel);
         Controls.Add(_statusLabel);
         Controls.Add(_check);
+        Controls.Add(versionLabel);
         ResumeLayout(performLayout: false);
         PerformLayout();
         _tcpServer = new TcpServer(42184);
