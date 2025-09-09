@@ -12,7 +12,10 @@ namespace VieeExtractor.Extractors;
 
 public class SLPS03015 : IExtractor
 {
-    
+    private const int SpeakerDisplayedAddressFukyuuban = 0xf407b;
+    private const int SpeakerDisplayedAddress = 0xf4623;
+    private const int SpeakerNameAddressFukyuuban = 0x1b8220;
+    private const int SpeakerNameAddress = 0x1b87c8;
     private const int TextAddressFukyuuban = 0x1a4e30;
     private const int TextAddress = 0x1a53d8;
     private const int LinePerChoiceAddressFukyuuban = 0x8b1df;
@@ -26,6 +29,7 @@ public class SLPS03015 : IExtractor
     private const uint ChoiceEnabled = 2;
     private const byte SingleLineChoice = 0x0A;
     private const byte DualLineChoice = 0x14;
+    private const byte DisplayingSpeaker = 1;
 
         
     private readonly ApiContainer _apiContainer;
@@ -88,7 +92,7 @@ public class SLPS03015 : IExtractor
         _choicesEnabled = choicesEnabled;
         if (!_choicesEnabled || _choicesCount == 0 || _lastChoicesBytes.All(b => b is 0xFF or 0x00) || fastForward)
         {
-            _extractResultListener.OnNewChoices(Array.Empty<string>(), -1);
+            _extractResultListener.OnNewData(ExtractorData.CreateChoices(Array.Empty<string>(), -1));
             return;
         }
         
@@ -96,7 +100,7 @@ public class SLPS03015 : IExtractor
         if (!_groupInfoDict.TryGetValue(hash, out gi))
         {
             Console.WriteLine("Unknown Font Page");
-            _extractResultListener.OnNewChoices(Array.Empty<string>(), -1);
+            _extractResultListener.OnNewData(ExtractorData.CreateChoices(Array.Empty<string>(), -1));
             return;
         }
         _choices.Clear();
@@ -114,7 +118,7 @@ public class SLPS03015 : IExtractor
                 _choices.Add(_textBuf.ToString());
             }
         }
-        _extractResultListener.OnNewChoices(_choices.ToArray(), -1);
+        _extractResultListener.OnNewData(ExtractorData.CreateChoices(_choices.ToArray(), -1));
     }
 
     private GroupInfoSerialize? CheckTextChange(bool fastForward)
@@ -130,7 +134,7 @@ public class SLPS03015 : IExtractor
         _lastBytes.AddRange(textMem);
         if (fastForward || _lastBytes.All(b => b is 0xFF or 0x00))
         {
-            _extractResultListener.OnNewText("");
+            _extractResultListener.OnNewData(ExtractorData.CreateText("", ""));
             return null;
         }
 
@@ -138,7 +142,7 @@ public class SLPS03015 : IExtractor
         if (!_groupInfoDict.TryGetValue(hash, out var gi))
         {
             Console.WriteLine("Unknown Font Page");
-            _extractResultListener.OnNewText("");
+            _extractResultListener.OnNewData(ExtractorData.CreateText("", ""));
             return null;
         }
 
@@ -164,7 +168,19 @@ public class SLPS03015 : IExtractor
             break;
         }
 
-        _extractResultListener.OnNewText(_textBuf.ToString());
+        var text = _textBuf.ToString();
+        
+        var speakerDisplayedAddress = _fukyuuban ? SpeakerDisplayedAddressFukyuuban : SpeakerDisplayedAddress;
+        var speaker = "";
+        if (_apiContainer.Memory.ReadByte(speakerDisplayedAddress) == DisplayingSpeaker)
+        {
+            var speakerNameAddress = _fukyuuban ? SpeakerNameAddressFukyuuban : SpeakerNameAddress;
+            var range = _apiContainer.Memory.ReadByteRange(speakerNameAddress, 20);
+            _textBuf.Clear();
+            ParseOneLine(range, 0, 10, gi, false);
+            speaker = _textBuf.ToString();
+        }
+        _extractResultListener.OnNewData(ExtractorData.CreateText(text, speaker));
         return gi;
     }
 

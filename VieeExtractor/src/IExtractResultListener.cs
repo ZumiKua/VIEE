@@ -2,7 +2,7 @@
 
 public interface IExtractResultListener
 {
-    void OnNewText(string text);
 
-    void OnNewChoices(string[] choices, int index);
+    void OnNewData(ExtractorData data);
+    
 }

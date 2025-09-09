@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Linq;
 using System.Text.Json;
 using System.Windows.Forms;
 using BizHawk.Client.Common;
@@ -84,19 +85,25 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
         _extractor?.FrameEnd(_check.Checked);
         UpdateConnectedClientCount();
     }
-
-    public void OnNewText(string text)
+    public void OnNewData(ExtractorData data)
     {
-        _label.Text = "Text:\n" + text;
-        var d = ExtractorData.CreateText(text);
-        _tcpServer.SendMessage(JsonSerializer.Serialize(d));
-    }
-
-    public void OnNewChoices(string[] choices, int index)
-    {
-        _choicesLabel.Text = "Choices:\n" + string.Join(",", choices);
-        var d = ExtractorData.CreateChoices(choices, index);
-        _tcpServer.SendMessage(JsonSerializer.Serialize(d));
-
+        switch (data.Type)
+        {
+            case ExtractorData.TypeText:
+                if (string.IsNullOrEmpty(data.Speaker))
+                {
+                    _label.Text = data.Text;
+                }
+                else
+                {
+                    _label.Text = $"{data.Speaker}：\n{data.Text}";
+                }
+                break;
+            case ExtractorData.TypeChoice:
+                var choicesWithSelect = data.Choices.Select((v, i) => i == data.Index ? $"> {v}" : v);
+                _choicesLabel.Text = string.Join(", ", choicesWithSelect);
+                break;
+        }
+        _tcpServer.SendMessage(JsonSerializer.Serialize(data));
     }
 }
