@@ -20,6 +20,9 @@ public partial class MainWindow : Window, IExtractorListener
 
     public bool KeepTypeWriterEffect { get => _keepTypeWriterEffect; set => _keepTypeWriterEffect = value; }
     private volatile bool _keepTypeWriterEffect;
+    
+    public bool KeepSpeaker { get => _keepSpeaker; set => _keepSpeaker = value; }
+    private volatile bool _keepSpeaker;
 
     public MainWindow()
     {
@@ -103,13 +106,13 @@ public partial class MainWindow : Window, IExtractorListener
         if (e.OutputState.State == OutputState.OBS_WEBSOCKET_OUTPUT_STOPPED && e.OutputState.OutputPath != null)
         {
             var path = Path.ChangeExtension(e.OutputState.OutputPath, ".srt");
-            if (WriteSrtWriterContent(_srtWriter, path, _keepTypeWriterEffect))
+            if (WriteSrtWriterContent(_srtWriter, path, _keepTypeWriterEffect, _keepSpeaker))
             {
                 msg = $"Srt File written to {path}";
             }
 
             var choicesPath = Path.ChangeExtension(e.OutputState.OutputPath, ".choices.srt");
-            WriteSrtWriterContent(_choicesWriter, choicesPath, false);
+            WriteSrtWriterContent(_choicesWriter, choicesPath, false, false);
         }
         Dispatcher.Invoke(() =>
         {
@@ -121,7 +124,7 @@ public partial class MainWindow : Window, IExtractorListener
         });
     }
 
-    private bool WriteSrtWriterContent(SrtWriter srtWriter, string path, bool keepTypeWriterEffect)
+    private bool WriteSrtWriterContent(SrtWriter srtWriter, string path, bool keepTypeWriterEffect, bool keepSpeaker)
     {
         SrtWriter.Writer writer;
         lock (srtWriter)
@@ -136,7 +139,7 @@ public partial class MainWindow : Window, IExtractorListener
         var duration = _timer.GetCurrentTime();
 
         using var stream = File.Open(path, FileMode.Create);
-        writer.WriteTo(stream, duration, keepTypeWriterEffect);
+        writer.WriteTo(stream, duration, keepTypeWriterEffect, keepSpeaker);
         return true;
     }
 
@@ -152,7 +155,7 @@ public partial class MainWindow : Window, IExtractorListener
         _clientManager.Connect(port);
     }
 
-    public void OnText(string text)
+    public void OnText(string text, string speaker)
     {
         if (_obs.IsConnected)
         {
@@ -162,7 +165,7 @@ public partial class MainWindow : Window, IExtractorListener
                 var duration = _timer.GetCurrentTime();
                 lock (_srtWriter)
                 {
-                    _srtWriter.AddEntry(text, duration);
+                    _srtWriter.AddEntry(text, speaker, duration);
                 }
             }
         }
@@ -182,7 +185,7 @@ public partial class MainWindow : Window, IExtractorListener
                 var duration = _timer.GetCurrentTime();
                 lock (_choicesWriter)
                 {
-                    _choicesWriter.AddEntry(string.Join("\n", choices), duration);
+                    _choicesWriter.AddEntry(string.Join("\n", choices), "", duration);
                 }
             }
         }

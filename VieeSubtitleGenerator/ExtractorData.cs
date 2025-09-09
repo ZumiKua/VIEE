@@ -8,12 +8,15 @@ public struct ExtractorData
     public string Text { get; set; }
     public string[] Choices { get; set; }
     public int Index { get; set; }
+    
+    public string Speaker { get; set; }
 
-    private ExtractorData(int type, string text, string[] choices, int index)
+    private ExtractorData(int type, string text, string[] choices, int index, string speaker)
     {
         Type = type;
         Text = text;
         Choices = choices;
         Index = index;
+        Speaker = speaker;
     }
 }

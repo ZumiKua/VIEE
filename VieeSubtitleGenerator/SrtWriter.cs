@@ -8,9 +8,9 @@ public class SrtWriter
 
     private List<Entry> _entries = new();
 
-    public void AddEntry(string text, long timestamp)
+    public void AddEntry(string text, string speaker, long timestamp)
     {
-        _entries.Add(new Entry(text, timestamp));
+        _entries.Add(new Entry(text, speaker, timestamp));
     }
 
     public void Clear()
@@ -34,17 +34,26 @@ public class SrtWriter
             _entries = entries;
         }
 
-        private bool IsSame(string prev, string current, bool keepTypeWriterEffect)
+        private bool IsSame(Entry? prev, Entry current, bool keepTypeWriterEffect, bool keepSpeaker)
         {
-            if (string.IsNullOrEmpty(prev) || string.IsNullOrEmpty(current))
+            if (prev == null)
+            {
+                return false;
+            }
+            if (string.IsNullOrEmpty(prev.Value.Text) || string.IsNullOrEmpty(current.Text))
+            {
+                return false;
+            }
+
+            if (prev.Value.Speaker != current.Speaker && keepSpeaker)
             {
                 return false;
             }
             if (keepTypeWriterEffect)
             {
-                return current == prev;
+                return current.Text == prev.Value.Text;
             }
-            return current.StartsWith(prev);
+            return current.Text.StartsWith(prev.Value.Text);
         }
         
         public bool HasContent()
@@ -61,32 +70,37 @@ public class SrtWriter
             return $"{hour:00}:{min:00}:{sec:00},{milli:0000}";
         }
 
-        public void WriteTo(Stream stream, long endDuration, bool keepTypeWriterEffect)
+        public void WriteTo(Stream stream, long endDuration, bool keepTypeWriterEffect, bool keepSpeaker)
         {
             using var writer = new StreamWriter(stream, Encoding.UTF8);
             var currentStartTime = -1L;
-            var currentString = "";
+            Entry? currentEntry = null;
             var srtIndex = 0;
             for (var i = 0; i <= _entries.Count; i++)
             {
-                var entry = i < _entries.Count ? _entries[i] : new Entry("", endDuration > 0 ? endDuration : _entries[^1].Timestamp + 1000L);
-                if (IsSame(currentString, entry.Text, keepTypeWriterEffect))
+                var entry = i < _entries.Count ? _entries[i] : new Entry("", "", endDuration > 0 ? endDuration : _entries[^1].Timestamp + 1000L);
+                if (IsSame(currentEntry, entry, keepTypeWriterEffect, keepSpeaker))
                 {
-                    currentString = entry.Text;
+                    currentEntry = entry;
                 }
                 else
                 {
-                    if (currentStartTime >= 0 && !string.IsNullOrEmpty(currentString))
+                    if (currentStartTime >= 0 && currentEntry.HasValue && !string.IsNullOrEmpty(currentEntry.Value.Text))
                     {
                         writer.WriteLine(srtIndex);
                         writer.WriteLine($"{TimestampToSrtFormat(currentStartTime)} --> {TimestampToSrtFormat(entry.Timestamp)}");
-                        writer.WriteLine(currentString);
+                        if (!string.IsNullOrEmpty(currentEntry.Value.Speaker) && keepSpeaker)
+                        {
+                            writer.Write(currentEntry.Value.Speaker);
+                            writer.Write(": ");
+                        }
+                        writer.WriteLine(currentEntry.Value.Text);
                         writer.WriteLine();
                         srtIndex++;
                     }
 
                     currentStartTime = entry.Timestamp;
-                    currentString = entry.Text;
+                    currentEntry = entry;
                 }
             }
         }
@@ -95,11 +109,13 @@ public class SrtWriter
     public struct Entry
     {
         public readonly string Text;
+        public readonly string Speaker;
         public readonly long Timestamp;
 
-        public Entry(string text, long timestamp)
+        public Entry(string text, string speaker, long timestamp)
         {
             Text = text;
+            Speaker = speaker;
             Timestamp = timestamp;
         }
     }

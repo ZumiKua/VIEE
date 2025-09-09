@@ -32,6 +32,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -51,8 +52,12 @@
                       IsChecked="{Binding KeepTypeWriterEffect, Mode=TwoWay }">
                 Keep TypeWriter Effect
             </CheckBox>
-            <TextBlock Grid.Row="6" Grid.Column="0" Text="Last Received Text:" Grid.ColumnSpan="3" />
-            <TextBlock Grid.Row="7" Grid.Column="0" Name="Content" Text="" Grid.ColumnSpan="3" />
+            <CheckBox Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3"
+                      IsChecked="{Binding KeepSpeaker, Mode=TwoWay }">
+                Keep Speaker
+            </CheckBox>
+            <TextBlock Grid.Row="7" Grid.Column="0" Text="Last Received Text:" Grid.ColumnSpan="3" />
+            <TextBlock Grid.Row="8" Grid.Column="0" Name="Content" Text="" Grid.ColumnSpan="3" />
         </Grid>
     </DockPanel>
     

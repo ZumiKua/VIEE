@@ -1,10 +1,8 @@
-﻿using System.IO;
-
-namespace VieeSubtitleGenerator;
+﻿namespace VieeSubtitleGenerator;
 
 public interface IExtractorListener
 {
-    void OnText(string text);
+    void OnText(string text, string speaker);
 
     void OnChoices(string[] choices, int index);
     

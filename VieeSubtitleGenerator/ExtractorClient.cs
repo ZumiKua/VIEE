@@ -43,7 +43,7 @@ public class ExtractorClient : IDisposable
                     switch (data.Type)
                     {
                         case ExtractorData.TypeText:
-                            _listener.OnText(data.Text);
+                            _listener.OnText(data.Text, data.Speaker);
                             break;
                         case ExtractorData.TypeChoices:
                             _listener.OnChoices(data.Choices, data.Index);
