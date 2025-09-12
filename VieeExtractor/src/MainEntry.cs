@@ -11,7 +11,7 @@ using VieeExtractor.Server;
 namespace VieeExtractor;
 
 [ExternalTool("VieeExtractor")] // this appears in the Tools > External Tools submenu in EmuHawk
-[ExternalToolApplicability.RomList(VSystemID.Raw.PSX, "37946519", "9A49C0E4", "5DCB56C1")]
+[ExternalToolApplicability.RomList(VSystemID.Raw.PSX, "37946519", "9A49C0E4", "5DCB56C1", "12CFF376")]
 public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultListener
 {
     protected override string WindowTitleStatic => "VieeExtractor";
