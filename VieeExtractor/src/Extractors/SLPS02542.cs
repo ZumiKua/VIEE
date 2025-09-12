@@ -55,7 +55,7 @@ public class SLPS02542 : IExtractor
             return;
         }
         var baseAddress = ConvertMemoryAddress(gpAddress);
-        var lineNumber = _apiContainer.Memory.ReadS32(baseAddress + LINE_NUMBER_OFFSET);
+        var lineNumber = _apiContainer.Memory.ReadS16(baseAddress + LINE_NUMBER_OFFSET);
         if (lineNumber >= INVALID_LINE_COUNT_MAX)
         {
             return;
