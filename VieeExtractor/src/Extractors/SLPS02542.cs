@@ -26,6 +26,7 @@ public class SLPS02542 : IExtractor
     private readonly List<long> _lastLineAddresses = new();
     private readonly byte[] _lineBuf = new byte[MAX_READ * BYTES_PER_READ];
     private bool _fastForwardEmptySent = false;
+    private bool _registerNotSupported;
 
     public SLPS02542(ApiContainer apiContainer, IExtractResultListener extractResultListener)
     {
@@ -35,7 +36,20 @@ public class SLPS02542 : IExtractor
 
     public void FrameEnd(bool fastForward)
     {
-        var gpAddress = _apiContainer.Emulation.GetRegister("gp") ?? BASE_ADDRESS;
+        ulong gpAddress = BASE_ADDRESS;
+        if (!_registerNotSupported)
+        {
+            var gpValueNullable = _apiContainer.Emulation.GetRegister("gp");
+            if (!gpValueNullable.HasValue)
+            {
+                _registerNotSupported = true;
+            }
+            else
+            {
+                gpAddress = gpValueNullable.Value;
+            }
+        }
+        
         if (gpAddress == 0)
         {
             return;
