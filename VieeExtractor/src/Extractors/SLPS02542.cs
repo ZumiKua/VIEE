@@ -78,8 +78,6 @@ public class SLPS02542 : IExtractor
         }
         _lastLineAddresses.Clear();
         _lastLineAddresses.AddRange(_lineAddresses);
-        var s = string.Join("\n", _lineAddresses.Select(v => $"{v:X8}"));
-        Console.WriteLine($"{lineAddressStart:X8}:\n{s}");
         if (fastForward)
         {
             if (!_fastForwardEmptySent)
@@ -93,13 +91,11 @@ public class SLPS02542 : IExtractor
         _textBuf.Clear();
         for (var i = 0; i < lineNumber; i++)
         {
-            Console.WriteLine($"ReadLine {i}");
             var address = _lineAddresses[i];
             var index = 0;
             for (var j = 0; j < MAX_READ; j++)
             {
                 var bytes = _apiContainer.Memory.ReadByteRange(address + j * BYTES_PER_READ, BYTES_PER_READ);
-                Console.WriteLine(string.Join(" ", bytes.Select(v => $"{v:X2}")));
                 for (var k = 0; k < bytes.Count; k += 2)
                 {
                     if (bytes[k] == 0 && bytes[k + 1] == 0)
@@ -121,7 +117,6 @@ public class SLPS02542 : IExtractor
             BREAK_LOOP:
             
             var str = ShiftJISEncoding.GetString(_lineBuf, 0, index);
-            Console.WriteLine($"Count {index}: {str}");
             if (str.Length > 0)
             {
                 _textBuf.Append(str);
