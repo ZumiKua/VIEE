@@ -9,6 +9,7 @@ VIEE是一款和[BizHawk](https://github.com/TASEmulators/BizHawk)配合使用�
 * Tantei Jinguji Saburo - Tomoshibi ga Kienu Ma ni (Japan) (Fukyuuban)
 * Tantei Jinguji Saburo - Tomoshibi ga Kienu Ma ni (Japan)
 * Not Treasure Hunter
+* Summon Night
 
 ## 目前的已知问题
 
