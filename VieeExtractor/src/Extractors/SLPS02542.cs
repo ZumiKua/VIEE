@@ -11,12 +11,13 @@ public class SLPS02542 : IExtractor
     private static readonly Encoding ShiftJISEncoding = Encoding.GetEncoding("shift_jis");
 
     private const uint BASE_ADDRESS = 0x80097448;
-    private const int LINE_NUMBER_OFFSET = 0x892;
+    private const int LINE_COUNT_OFFSET = 0x760;
     private const int LINE_ADDRESS_OFFSET = 0x898;
     private const int MAX_READ = 3;
     private const int BYTES_PER_READ = 22;
-    //In case of an illegal value at the LINE_NUMBER address causes the program to enter an infinite loop.
-    private const int INVALID_LINE_COUNT_MAX = 10;
+    //In case of an illegal value at the line count address causes the program to enter an infinite loop.
+    private const int MAX_VALID_LINE_COUNT = 10;
+    private const int MAP_LOCATION_NAME_COUNT_VALUE = 0x2D;
 
 
     private readonly ApiContainer _apiContainer;
@@ -55,8 +56,12 @@ public class SLPS02542 : IExtractor
             return;
         }
         var baseAddress = ConvertMemoryAddress(gpAddress);
-        var lineNumber = _apiContainer.Memory.ReadS16(baseAddress + LINE_NUMBER_OFFSET);
-        if (lineNumber >= INVALID_LINE_COUNT_MAX)
+        var lineNumber = _apiContainer.Memory.ReadByte(baseAddress + LINE_COUNT_OFFSET);
+        if (lineNumber == MAP_LOCATION_NAME_COUNT_VALUE)
+        {
+            lineNumber = 1;
+        }
+        if (lineNumber > MAX_VALID_LINE_COUNT)
         {
             return;
         }
@@ -122,8 +127,8 @@ public class SLPS02542 : IExtractor
                 _textBuf.Append(str);
                 _textBuf.Append('\n');
             }
-            _extractResultListener.OnNewData(ExtractorData.CreateText(_textBuf.ToString(), ""));
         }
+        _extractResultListener.OnNewData(ExtractorData.CreateText(_textBuf.ToString(), ""));
     }
 
     private static long ConvertMemoryAddress(ulong address)
