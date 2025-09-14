@@ -1,4 +1,6 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -7,6 +9,7 @@ using BizHawk.Client.Common;
 using BizHawk.Client.EmuHawk;
 using BizHawk.Emulation.Common;
 using VieeExtractor.Server;
+using VieeExtractor.VersionChecking;
 
 namespace VieeExtractor;
 
@@ -14,6 +17,9 @@ namespace VieeExtractor;
 [ExternalToolApplicability.RomList(VSystemID.Raw.PSX, "37946519", "9A49C0E4", "5DCB56C1", "12CFF376")]
 public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultListener
 {
+
+    private const string DownloadReleaseUrl = "https://github.com/ZumiKua/VIEE/releases";
+    
     protected override string WindowTitleStatic => "VieeExtractor";
     
     [OptionalApi]
@@ -28,6 +34,9 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
     private readonly Label _choicesLabel;
     private readonly CheckBox _check;
     private readonly Label _statusLabel;
+    private readonly Label _versionLabel;
+    private readonly string _version;
+    private readonly VersionChecker _versionChecker;
     private IExtractor? _extractor;
     private int _memoizedClientCount = -1;
 
@@ -42,29 +51,64 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
         {
             AutoSize = true, Text = "", Top = 320 - 16, Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
-        var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+        _version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()
             .InformationalVersion;
-        var versionLabel = new Label
+        _versionLabel = new Label
         {
             TextAlign = ContentAlignment.TopRight,
-            Width = 200, Left = 480 - 200, Text = version, Top = 320 - 16,
-            Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            Width = 200, Left = 480 - 200, Text = _version, Top = 320 - 16,
+            Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
+            Cursor = Cursors.Hand
         };
+        _versionLabel.Click += OnVersionClick;
         _check = new CheckBox { AutoSize = true, Text = "Pause extraction in turbo mode" };
         Controls.Add(_label);
         Controls.Add(_choicesLabel);
         Controls.Add(_statusLabel);
         Controls.Add(_check);
-        Controls.Add(versionLabel);
+        Controls.Add(_versionLabel);
         ResumeLayout(performLayout: false);
         PerformLayout();
         _tcpServer = new TcpServer(42184);
+        _versionChecker = new VersionChecker(_version!, OnVersionCheckerResult);
+        _versionChecker.Start();
+
+    }
+
+    private void OnVersionClick(object sender, EventArgs e)
+    {
+        try
+        {
+            Process.Start(DownloadReleaseUrl);
+        }
+        catch (Exception _)
+        {
+            //do nothing.
+        }
+    }
+
+    private void OnVersionCheckerResult(bool newVersion)
+    {
+        if (!newVersion)
+        {
+            return;
+        }
+
+        if (_versionLabel.InvokeRequired)
+        {
+            _versionLabel.Invoke(() =>
+            {
+                _versionLabel.Text = $"(NewVersion!){_version}";
+                _versionLabel.ForeColor = Color.Blue;
+            });
+        }
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         base.OnFormClosed(e);
         _tcpServer.Dispose();
+        _versionChecker.Dispose();
     }
 
     public override void Restart()
