@@ -188,6 +188,20 @@ public class SLPS01030 : IExtractor
             {
                 break;
             }
+
+            if (c == ' ')
+            {
+                _textBuf[len++] = c;
+                i -= 1;
+                continue;
+            }
+
+            if (c == 0x0D)
+            {
+                _textBuf[len++] = 0x0A;
+                i -= 1;
+                continue;
+            }
             _textBuf[len] = c;
             _textBuf[len + 1] = c1;
             len += 2;
