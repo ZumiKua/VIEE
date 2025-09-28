@@ -14,7 +14,7 @@ using VieeExtractor.VersionChecking;
 namespace VieeExtractor;
 
 [ExternalTool("VieeExtractor")] // this appears in the Tools > External Tools submenu in EmuHawk
-[ExternalToolApplicability.RomList(VSystemID.Raw.PSX, "37946519", "9A49C0E4", "5DCB56C1", "12CFF376")]
+[ExternalToolApplicability.RomList(VSystemID.Raw.PSX, "37946519", "9A49C0E4", "5DCB56C1", "12CFF376", "E978F6ED")]
 public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultListener
 {
 
@@ -116,6 +116,7 @@ public sealed class MainEntry : ToolFormBase, IExternalToolForm, IExtractResultL
         base.Restart();
         var gameInfo = MaybeEmulationApi?.GetGameInfo();
         _extractor = ExtractorFactory.Create(gameInfo?.Hash, APIs, this);
+        Console.WriteLine($"GameId {gameInfo?.Hash}");
     }
 
     protected override void UpdateAfter()

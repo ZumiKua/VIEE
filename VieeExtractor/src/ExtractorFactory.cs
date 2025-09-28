@@ -9,6 +9,8 @@ public class ExtractorFactory
     {
         switch (hash)
         {
+            case "E978F6ED":
+                return new SLPS01030(apiContainer, listener);
             case "12CFF376":
                 return new SLPS02542(apiContainer, listener);
             case "5DCB56C1":
