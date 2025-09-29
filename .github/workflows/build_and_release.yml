@@ -38,7 +38,7 @@ jobs:
       # 步骤 3: 下载并解压 BizHawk
       - name: Download and Extract BizHawk
         run: |
-          Invoke-WebRequest -Uri "https://github.com/TASEmulators/BizHawk/releases/download/2.10/BizHawk-2.10-win-x64.zip" -OutFile "BizHawk.zip"
+          Invoke-WebRequest -Uri "https://github.com/TASEmulators/BizHawk/releases/download/2.11/BizHawk-2.11-win-x64.zip" -OutFile "BizHawk.zip"
           Expand-Archive -Path "BizHawk.zip" -DestinationPath "BizHawk"
         shell: pwsh
 
@@ -52,20 +52,46 @@ jobs:
         run: dotnet publish -c Release -o ./publish_output VieeSubtitleGenerator/VieeSubtitleGenerator.csproj
         shell: pwsh
 
-      # 步骤 6: 整理文件以供打包
-      - name: Stage Release Files
+      # 步骤 6: 整理文件以供完整包打包
+      - name: Stage Full Release Files
         run: |
           New-Item -ItemType Directory -Path ./Achieve
-          Copy-Item -Path ./BizHawk -Destination ./Achieve/BizHawk-2.10-win-x64 -Recurse
+          Copy-Item -Path ./BizHawk -Destination ./Achieve/BizHawk-2.11-win-x64 -Recurse
           Copy-Item -Path ./publish_output -Destination ./Achieve/VieeSubtitleGenerator -Recurse
         shell: pwsh
 
-      # 步骤 7: 将 Achieve 文件夹内容打包成 ZIP
-      - name: Create ZIP Archive
+      # 步骤 7: 将 Achieve 文件夹内容打包成 ZIP (完整包)
+      - name: Create Full ZIP Archive
         run: Compress-Archive -Path ./Achieve/* -DestinationPath ./Viee-win-x64.zip
         shell: pwsh
       
-      # 步骤 8: 如果是手动触发，则将 ZIP 作为 Artifact 上传
+      # 步骤 8: 整理用于升级包的文件
+      # 仅在创建 tag release 时执行
+      - name: Stage Upgrade Files
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # 1. 创建一个根目录用于存放升级文件
+          New-Item -ItemType Directory -Path ./UpgradePackage
+
+          # 2. 在根目录下创建 ExternalTools 文件夹，并将内容复制进去
+          New-Item -ItemType Directory -Path ./UpgradePackage/ExternalTools
+          Copy-Item -Path ./BizHawk/ExternalTools/* -Destination ./UpgradePackage/ExternalTools -Recurse
+
+          # 3. 在根目录下创建 VieeSubtitleGenerator 文件夹，并将内容复制进去
+          New-Item -ItemType Directory -Path ./UpgradePackage/VieeSubtitleGenerator
+          Copy-Item -Path ./publish_output/* -Destination ./UpgradePackage/VieeSubtitleGenerator -Recurse
+        shell: pwsh
+
+      # 步骤 9: 将升级文件打包成 ZIP
+      # 仅在创建 tag release 时执行
+      - name: Create Upgrade ZIP Archive
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # 使用 tag 名称来命名升级包
+          Compress-Archive -Path ./UpgradePackage/* -DestinationPath ./Upgrade-${{ github.ref_name }}.zip
+        shell: pwsh
+
+      # 步骤 10: 如果是手动触发，则将完整包作为 Artifact 上传
       - name: Upload Artifact for Manual Run
         if: github.event_name == 'workflow_dispatch' # 关键条件：仅在手动运行时执行
         uses: actions/upload-artifact@v4
@@ -73,7 +99,7 @@ jobs:
           name: Viee-win-x64-Package # 下载的 Artifact 名称
           path: ./Viee-win-x64.zip  # 要上传的文件
 
-      # 步骤 9: 创建 GitHub Release 并上传 ZIP 文件
+      # 步骤 11: 创建 GitHub Release 并上传两个 ZIP 文件
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -83,4 +109,6 @@ jobs:
           name: ${{ github.ref_name }}
           # 如果 tag 名称包含 '-' (例如 v1.0.0-beta), 标记为预发布
           prerelease: ${{ contains(github.ref_name, '-') }}
-          files: ./Viee-win-x64.zip
+          files: |
+            ./Viee-win-x64.zip
+            ./Upgrade-${{ github.ref_name }}.zip
