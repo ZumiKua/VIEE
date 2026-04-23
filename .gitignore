@@ -4,6 +4,7 @@ obj/
 !/BizHawk/ExternalTools
 /BizHawk/ExternalTools/*
 !/BizHawk/ExternalTools/SLPS03015.zip
+!/BizHawk/ExternalTools/SLPM86264.zip
 /packages/
 riderModule.iml
 /_ReSharper.Caches/

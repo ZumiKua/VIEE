@@ -18,6 +18,8 @@ public class ExtractorFactory
             case "37946519":
             case "9A49C0E4":
                 return new SLPS03015(hash, apiContainer, listener);
+            case "2D0E6095":
+                return new SLPM86264(apiContainer, listener);
             default:
                 return DummyExtractor.Instance;
         }
