@@ -94,7 +94,6 @@ public class SLPM86264 : IExtractor
     {
         if (_apiContainer.Memory.ReadU32(ConvertMemoryAddress(LogCodeAddr)) == LogCodeAddrDefaultValue)
         {
-            Console.WriteLine("Write To Address");
             _apiContainer.Memory.WriteByteRange(ConvertMemoryAddress(LogCodeAddr), LogCode);
         }
 
@@ -103,7 +102,6 @@ public class SLPM86264 : IExtractor
         //我们修改后的跳转指令会被重新读入 i-cache 并生效。
         if (_apiContainer.Memory.ReadU32(ConvertMemoryAddress(JumpCodeAddr)) == JumpCodeAddrDefaultValue)
         {
-            Console.WriteLine("Write To Jump");
             _apiContainer.Memory.WriteByteRange(ConvertMemoryAddress(JumpCodeAddr), JumpCode);
         }
     }
@@ -173,7 +171,6 @@ public class SLPM86264 : IExtractor
         var startAddress = _apiContainer.Memory.ReadU32(ConvertMemoryAddress(TalkStartPointerAddr));
         if (startAddress is < 0x80000000u or >= 0x80200000u || startAddress == _badTextStartAddress)
         {
-            //Console.WriteLine($"Bad Address {startAddress:X8}");
             _rangeStart = 0;
             _rangeEnd = 0;
             DispatchText("", fastForward);
@@ -195,7 +192,6 @@ public class SLPM86264 : IExtractor
 
         foreach (var (s, e, str) in ExtractText(startAddress))
         {
-            Console.WriteLine($"{s:x8} {e:x8} {str}");
             if (currentTextPointer >= s && currentTextPointer <= e)
             {
                 _rangeStart = s;
@@ -278,10 +274,8 @@ public class SLPM86264 : IExtractor
 
     private void AppendPlayerName(StringBuilder textBuf)
     {
-        Console.WriteLine("Append Player Name");
         var name = _apiContainer.Memory.ReadByteRange(ConvertMemoryAddress(PlayerNamePointerAddr), 0x10);
         //打印 name 的内容
-        Console.WriteLine(string.Join(" ", name.Select(i => $"{i:X2}")));
         for (int i = 0; i < name.Count; i++)
         {
             if (name[i] == 0)
